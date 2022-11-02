@@ -12,7 +12,7 @@ export const elevated =
       .split(':')[0];
 
     // check if accessing this user's database
-    if (!url.match(new RegExp(`^\/clarkchen(?:-[^\s\/\\]*)?(?:\/|$)`))) {
+    if (!url.match(new RegExp(`^\\/${username}(?:-[^\\s\\/\\\\]*)?(?:\\/|$)`))) {
       return reply.code(403).send({ message: 'invalid access' });
     }
 
