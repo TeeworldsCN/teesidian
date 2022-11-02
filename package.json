@@ -2,10 +2,7 @@
   "name": "teesidian",
   "version": "1.0.0",
   "description": "management api for couchdb designed for obsidian-livesync",
-  "exports": "./dist/index.js",
-  "engines": {
-    "node": ">=14.16"
-  },
+  "main": "./dist/index.js",
   "scripts": {
     "start": "node ./dist/index.js",
     "build": "tsc",
