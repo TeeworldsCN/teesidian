@@ -1,0 +1,10 @@
+const m = module;
+
+m.exports = () => ({
+  couchdb: 'DB_URL',
+  port: '5985',
+  admin: {
+    username: 'username',
+    password: 'password',
+  },
+});
