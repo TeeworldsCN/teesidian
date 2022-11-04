@@ -2,10 +2,26 @@ import Fastify from 'fastify';
 import { CONFIG } from './config';
 import { passthrough } from './handlers/passthrough';
 import cors from '@fastify/cors';
-import { elevated } from './handlers/elevate';
+import { deleteDB, putDB } from './handlers/elevated';
+import { createDatabaseIfNotExists, createIndex } from './db/database';
+import { getVaults } from './apis/vaults';
 
 const main = async () => {
-  const app = Fastify({ ignoreTrailingSlash: true });
+  // database check and creation
+  await createDatabaseIfNotExists('i+vaults');
+  await createIndex('i+vaults', {
+    index: {
+      fields: ['user'],
+    },
+    name: 'user-index',
+    type: 'json',
+  });
+
+  const app = Fastify({
+    ignoreTrailingSlash: true,
+    // 128M
+    bodyLimit: 134217728,
+  });
 
   app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body: string, done) => {
     if (body === '' || body == null) {
@@ -32,11 +48,15 @@ const main = async () => {
     strictPreflight: false,
   });
 
+  /** CouchDB wrapper */
   app.all('/sync/', passthrough(/^\/sync/));
   app.all('/sync/*', passthrough(/^\/sync/));
 
-  app.delete('/sync/:db', elevated(/^\/sync/));
-  app.put('/sync/:db', elevated(/^\/sync/));
+  app.delete('/sync/:db', deleteDB(/^\/sync/));
+  app.put('/sync/:db', putDB(/^\/sync/));
+
+  // /** API */
+  app.get('/api/vaults',getVaults);
 
   const address = await app.listen({ port: CONFIG.port });
   console.log(`Server listening at ${address}`);

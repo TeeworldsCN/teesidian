@@ -1,10 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { CONFIG } from '../config';
 import axios, { AxiosError } from 'axios';
+import { dbRequest } from '../utils';
 
 export const passthrough =
   (prefix: RegExp) => async (request: FastifyRequest, reply: FastifyReply) => {
-    const url = request.url.replace(prefix, '');
+    let req;
+    try {
+      req = dbRequest(prefix, request);
+    } catch (err) {
+      return reply.code(400).send(err.message);
+    }
 
     try {
       const options = {
@@ -16,7 +22,7 @@ export const passthrough =
         },
         data: request.body,
       };
-      const response = await axios(url, options);
+      const response = await axios(req.url, options);
       return reply.code(response.status).send(response.data);
     } catch (err) {
       if (err.isAxiosError) {
