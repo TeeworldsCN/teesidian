@@ -114,6 +114,9 @@ RUN mkdir /teesidian && chown couchdb:couchdb /teesidian
 # Link the data directory
 VOLUME /teesidian
 
+# Expose app ports
+EXPOSE 5985
+
 # setup the entrypoint
 ENTRYPOINT ["tini", "--", "/docker-entrypoint.sh"]
 
