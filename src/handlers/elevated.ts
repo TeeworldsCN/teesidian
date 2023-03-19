@@ -8,6 +8,7 @@ import {
   permitDatabase,
 } from '../db/database';
 import { createVaultInfo, deleteVaultInfo } from '../db/vaults';
+import { passthrough } from './user';
 
 // elevate permission for database management
 export const putDB = (prefix: RegExp) => async (request: FastifyRequest, reply: FastifyReply) => {
@@ -16,6 +17,10 @@ export const putDB = (prefix: RegExp) => async (request: FastifyRequest, reply: 
     req = dbRequest(prefix, request);
   } catch (err) {
     return reply.code(400).send(err.message);
+  }
+
+  if (!req.allowElevated) {
+    return await passthrough(request, reply, req);
   }
 
   if (!(await userAuthed(req.auth))) {
@@ -42,6 +47,10 @@ export const deleteDB =
       req = dbRequest(prefix, request);
     } catch (err) {
       return reply.code(400).send(err.message);
+    }
+
+    if (!req.allowElevated) {
+      return await passthrough(request, reply, req);
     }
 
     if (!(await userAuthed(req.auth))) {

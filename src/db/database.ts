@@ -1,6 +1,18 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 
+export const checkDatabaseConnection = async () => {
+  try {
+    await axios(`/`, {
+      baseURL: CONFIG.couchdb,
+      method: 'GET',
+    });
+  } catch (e) {
+    if (e.response && e.response.status === 401) return;
+    throw e;
+  }
+};
+
 export const checkDatabaseExists = async (db: string) => {
   try {
     await axios(`/${encodeURIComponent(db)}`, {
@@ -108,4 +120,23 @@ export const findDocuments = async (db: string, options: any) => {
   });
 
   return response.data.docs;
+};
+
+export const getAllDocs = async (db: string) => {
+  const response = await axios<{
+    total_rows: number;
+    rows: {
+      id: string;
+      key: string;
+      value: {
+        rev: string;
+      };
+    }[];
+  }>(`/${encodeURIComponent(db)}/_all_docs`, {
+    baseURL: CONFIG.couchdb,
+    method: 'GET',
+    headers: { Authorization: CONFIG.auth },
+  });
+
+  return response.data;
 };

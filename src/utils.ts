@@ -9,18 +9,29 @@ export const urlJoin = (url: string, path: string) => {
 };
 
 export const dbRequest = (prefix: RegExp, request: FastifyRequest) => {
-  const urlParts = request.url.replace(prefix, '').split('/');
   const auth = request.headers.authorization;
+  if (!auth) throw new Error('Invalid credentials');
+
+  const urlParts = request.url.replace(prefix, '').split('/');
   const username = Buffer.from(auth.replace(/^Basic /i, ''), 'base64')
     .toString('utf-8')
     .split(':')[0];
   const vault = urlParts[1];
   const op = urlParts.slice(2).join('/');
 
-  if (!auth) throw new Error('Invalid credentials');
   if (!username) throw new Error('Invalid username');
-
-  if (vault) {
+  if (vault.startsWith('_')) {
+    // admin operations
+    return {
+      url: `/${vault}/${op}`,
+      db: vault,
+      username,
+      vault,
+      auth,
+      allowElevated: false,
+    };
+  }
+  else if (vault) {
     // database operations
     const db = `${username}-${vault}`;
 
@@ -30,6 +41,7 @@ export const dbRequest = (prefix: RegExp, request: FastifyRequest) => {
       username,
       vault,
       auth,
+      allowElevated: true,
     };
   } else {
     // root operations
@@ -41,17 +53,19 @@ export const dbRequest = (prefix: RegExp, request: FastifyRequest) => {
       username,
       vault: null,
       auth,
+      allowElevated: true,
     };
   }
 };
 
 export const apiRequest = (request: FastifyRequest) => {
   const auth = request.headers.authorization;
+  if (!auth) throw new Error('Invalid credentials');
+
   const username = Buffer.from(auth.replace(/^Basic /i, ''), 'base64')
     .toString('utf-8')
     .split(':')[0];
 
-  if (!auth) throw new Error('Invalid credentials');
   if (!username) throw new Error('Invalid username');
 
   return {

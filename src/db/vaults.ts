@@ -1,4 +1,4 @@
-import { createDocument, deleteDocument, findDocuments } from './database';
+import { createDocument, deleteDocument, findDocuments, getAllDocs } from './database';
 
 export const createVaultInfo = async (user: string, vault: string) => {
   const db = `${user}-${vault}`;
@@ -29,4 +29,14 @@ export const getVaultInfos = async (user: string) => {
       user,
     },
   });
+};
+
+export const getVaultDocs = async (user: string, vault: string) => {
+  const db = `${user}-${vault}`;
+
+  try {
+    return await getAllDocs(db);
+  } catch (e) {
+    if (!e.response || e.response.status !== 404) throw e;
+  }
 };

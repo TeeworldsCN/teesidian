@@ -1,12 +1,30 @@
 import Fastify from 'fastify';
 import { CONFIG } from './config';
-import { passthrough } from './handlers/passthrough';
+import { userRequest } from './handlers/user';
 import cors from '@fastify/cors';
 import { deleteDB, putDB } from './handlers/elevated';
-import { createDatabaseIfNotExists, createIndex } from './db/database';
+import { checkDatabaseConnection, createDatabaseIfNotExists, createIndex, findDocuments } from './db/database';
 import { getVaults } from './apis/vaults';
 
 const main = async () => {
+  // wait for couchdb to start, retry for 5 seconds
+  let retries = 50;
+  while (retries > 0) {
+    try {
+      await checkDatabaseConnection();
+      break;
+    } catch (e) {
+      console.log('Waiting for CouchDB to start...');
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      retries--;
+    }
+    
+    if (retries === 0) {
+      console.log('CouchDB failed to start, exiting...');
+      process.exit(1);
+    }
+  }
+
   // database check and creation
   await createDatabaseIfNotExists('i+vaults');
   await createIndex('i+vaults', {
@@ -49,16 +67,16 @@ const main = async () => {
   });
 
   /** CouchDB wrapper */
-  app.all('/sync/', passthrough(/^\/sync/));
-  app.all('/sync/*', passthrough(/^\/sync/));
+  app.all('/sync/', userRequest(/^\/sync/));
+  app.all('/sync/*', userRequest(/^\/sync/));
 
   app.delete('/sync/:db', deleteDB(/^\/sync/));
   app.put('/sync/:db', putDB(/^\/sync/));
 
   // /** API */
-  app.get('/api/vaults',getVaults);
+  app.get('/api/vaults', getVaults);
 
-  const address = await app.listen({ port: CONFIG.port });
+  const address = await app.listen({ port: CONFIG.port, host: CONFIG.host });
   console.log(`Server listening at ${address}`);
 };
 
